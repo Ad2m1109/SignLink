@@ -1,0 +1,35 @@
+name: personnemuette
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_tts: ^4.2.2
+  # Removed tflite_flutter and camera
+  cupertino_icons: ^1.0.8
+  http: ^1.3.0
+  shared_preferences: ^2.2.2
+  image: ^4.0.17
+  file_picker: ^5.2.2 # Add this line
+  flutter_sound: ^9.2.13 # Add this for recording audio
+  permission_handler: ^10.2.0 # Add this for handling microphone permissions
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/google.png
+    - assets/facebook_icon.webp
+    - assets/background.jpg
+    - assets/back2.jpg
+    - assets/welcombackground.jpg
