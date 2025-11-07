@@ -1,12 +1,11 @@
-import mysql.connector
+import os
+from dotenv import load_dotenv
 
-config = {
-    'user': 'root',
-    'password': 'root',
-    'host': 'localhost',  # Remove the port from here
-    'port': 3306,         # Add the port as a separate key
-    'database': 'personnemuette',
-    'raise_on_warnings': True,
-}
+load_dotenv()
 
-link = mysql.connector.connect(**config)
+class Config:
+    SQLALCHEMY_DATABASE_URI = (
+        f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@"
+        f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False

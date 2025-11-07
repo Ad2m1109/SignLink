@@ -1,12 +1,6 @@
-from config.database import link
+from models import db, Message
 
 def create_message(idcnv, iduser, contenu):
-    cursor = link.cursor()
-    query = """
-        INSERT INTO message (idcnv, iduser, contenu) 
-        VALUES (%s, %s, %s)
-    """  # Added iduser to the query
-    values = (idcnv, iduser, contenu)
-    cursor.execute(query, values)
-    link.commit()
-    cursor.close()
+    new_message = Message(idcnv=idcnv, iduser=iduser, contenu=contenu)
+    db.session.add(new_message)
+    db.session.commit()

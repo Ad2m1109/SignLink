@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
-from modules.conversation_module import create_conversation
-from modules.user_module import get_conversation_messages, get_conversation_id
+from modules.conversation_module import create_conversation, get_conversation_messages
 
 conversation_bp = Blueprint('conversation', __name__)
 
