@@ -177,4 +177,80 @@ class ApiService {
       throw Exception(errorMessage);
     }
   }
+
+  // Invitation Methods
+
+  static Future<void> sendInvitation(
+      String senderId, String receiverEmail, String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/invitations/send'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'sender_id': senderId,
+        'receiver_email': receiverEmail,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      final errorData = json.decode(response.body);
+      throw Exception(errorData['message'] ?? 'Failed to send invitation');
+    }
+  }
+
+  static Future<List<dynamic>> getReceivedInvitations(
+      String userId, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/invitations/received/$userId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load received invitations');
+    }
+  }
+
+  static Future<List<dynamic>> getSentInvitations(
+      String userId, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/invitations/sent/$userId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load sent invitations');
+    }
+  }
+
+  static Future<void> respondToInvitation(
+      int invitationId, String status, String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/invitations/respond'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'invitation_id': invitationId,
+        'status': status,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final errorData = json.decode(response.body);
+      throw Exception(errorData['message'] ?? 'Failed to respond to invitation');
+    }
+  }
 }

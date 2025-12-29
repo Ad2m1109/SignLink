@@ -6,6 +6,7 @@ from models import db
 from controllers.user_controller import user_bp
 from controllers.conversation_controller import conversation_bp
 from controllers.message_controller import message_bp
+from controllers.invitation_controller import invitation_bp
 from manage import start, create_database_if_not_exists
 
 app = Flask(__name__)
@@ -25,6 +26,7 @@ app.cli.add_command(start)
 app.register_blueprint(user_bp, url_prefix='/users')
 app.register_blueprint(conversation_bp, url_prefix='/conversations')
 app.register_blueprint(message_bp, url_prefix='/messages')
+app.register_blueprint(invitation_bp, url_prefix='/invitations')
 
 if __name__ == '__main__':
     # Create missing tables from models if they don't exist yet. Using

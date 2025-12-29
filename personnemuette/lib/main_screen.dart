@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'another_screen.dart';
-import 'add_friend_screen.dart';
+import 'invitations/invitations_page.dart'; // Import InvitationsPage
 import 'about_page.dart';
 import 'sign_in_page.dart';
 import 'services/api_service.dart';
@@ -39,16 +39,20 @@ class _HomePageState extends State<HomePage> {
       final token = await UserPreferences.getUserToken();
       if (userId != null && token != null) {
         final userProfile = await ApiService.getUserProfile(userId, token);
-        setState(() {
-          userName = userProfile['name']; // Use the connected user's name
-          friends = List<String>.from(userProfile['friends']); // Fetch friends
-          filteredFriends = friends; // Initialize filtered list
-        });
+        if (mounted) {
+          setState(() {
+            userName = userProfile['name']; // Use the connected user's name
+            friends = List<String>.from(userProfile['friends']); // Fetch friends
+            filteredFriends = friends; // Initialize filtered list
+          });
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load user data: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load user data: $e')),
+        );
+      }
     }
   }
 
@@ -93,13 +97,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _navigateToAddFriendScreen() async {
-    // Navigate to AddFriendScreen and wait for it to return
+  void _navigateToInvitations() async {
+    // Navigate to InvitationsPage and wait for it to return
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AddFriendScreen()),
+      MaterialPageRoute(builder: (context) => InvitationsPage()),
     );
-    // Reload the friends list after returning
+    // Reload the friends list after returning (in case a friend request was accepted)
     _loadUserData();
   }
 
@@ -130,7 +134,7 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.logout), // Changed icon to logout for clarity
             onPressed: _showCloseAccountDialog,
           ),
         ],
@@ -210,8 +214,8 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddFriendScreen, // Use the new method
-        child: Icon(Icons.add),
+        onPressed: _navigateToInvitations, // Use the new method
+        child: Icon(Icons.person_add), // Icon for invitations/add friend
         backgroundColor: isDarkMode ? Colors.grey[800] : Colors.blue,
       ),
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
