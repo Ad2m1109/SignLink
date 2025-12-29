@@ -218,54 +218,22 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: () async {
+                    onPressed: () {
                       final message = gestureText.trim();
                       if (message.isNotEmpty && message != "Aucun geste détecté") {
-                        try {
-                          final userId = await UserPreferences.getUserId();
-                          final token = await UserPreferences.getUserToken();
-                          final conversationId = ModalRoute.of(context)
-                              ?.settings
-                              .arguments as String?;
-
-                          if (userId == null ||
-                              token == null ||
-                              conversationId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(
-                                      'Failed to send message: Missing required data')),
-                            );
-                            return;
-                          }
-
-                          await ApiService.sendMessage(
-                              conversationId, userId, message, token);
-
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ConversationPage(
-                                friendEmail: '', 
-                                conversationId: conversationId,
-                                isDarkMode: false,
-                              ),
-                            ),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Failed to send message: $e')),
-                          );
-                        }
+                        Navigator.pop(context, message);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No gesture detected to send')),
+                        );
                       }
                     },
-                    child: Text("Send Text"),
+                    child: const Text("Send Text"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       padding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),

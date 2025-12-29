@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -30,22 +31,31 @@ class _ConversationPageState extends State<ConversationPage> {
   final ScrollController _scrollController = ScrollController();
   String? userId;
   String friendName = "Loading...";
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadMessages();
     _loadFriendName();
+    _startPolling();
   }
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadMessages() async {
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      _loadMessages(isPolling: true);
+    });
+  }
+
+  Future<void> _loadMessages({bool isPolling = false}) async {
     try {
       final token = await UserPreferences.getUserToken();
       userId = await UserPreferences.getUserId();
@@ -55,13 +65,13 @@ class _ConversationPageState extends State<ConversationPage> {
         if (mounted) {
           setState(() {
             messages = fetchedMessages;
-            isLoading = false;
+            if (!isPolling) isLoading = false;
           });
-          _scrollToBottom();
+          if (!isPolling) _scrollToBottom();
         }
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && !isPolling) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load messages: $e')),
@@ -103,8 +113,8 @@ class _ConversationPageState extends State<ConversationPage> {
     }
   }
 
-  Future<void> _sendMessage() async {
-    final message = _messageController.text.trim();
+  Future<void> _sendMessage({String? content}) async {
+    final message = content ?? _messageController.text.trim();
     if (message.isNotEmpty && userId != null) {
       try {
         final tempMessage = {
@@ -123,10 +133,10 @@ class _ConversationPageState extends State<ConversationPage> {
         if (token != null) {
           await ApiService.sendMessage(
               widget.conversationId, userId!, message, token);
-          _messageController.clear();
+          if (content == null) _messageController.clear();
           if (mounted) {
             setState(() {
-              isWritingMessage = false;
+              if (content == null) isWritingMessage = false;
               messages.removeWhere((msg) => msg['isSending'] == true);
             });
             _loadMessages();
@@ -323,7 +333,7 @@ class _ConversationPageState extends State<ConversationPage> {
                           ),
                           const SizedBox(width: 10),
                           FloatingActionButton(
-                            onPressed: _sendMessage,
+                            onPressed: () => _sendMessage(),
                             mini: true,
                             elevation: 0,
                             backgroundColor: Theme.of(context).primaryColor,
@@ -352,15 +362,16 @@ class _ConversationPageState extends State<ConversationPage> {
                           const SizedBox(width: 15),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
+                              onPressed: () async {
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => SignLanguagePage(),
-                                    settings: RouteSettings(
-                                        arguments: widget.conversationId),
                                   ),
                                 );
+                                if (result != null && result is String) {
+                                  _sendMessage(content: result);
+                                }
                               },
                               icon: const Icon(Icons.back_hand),
                               label: const Text("Sign"),
