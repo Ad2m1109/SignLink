@@ -1,6 +1,6 @@
-# Personne Muette
+# HandTalk
 
-Personne Muette is a communication platform designed to assist individuals with speech impairments. It provides features like text messaging, voice messaging, and sign language recognition to facilitate seamless communication.
+HandTalk is a communication platform designed to assist individuals with speech impairments. It provides features like text messaging, voice messaging, and sign language recognition to facilitate seamless communication.
 
 ## Features
 
@@ -29,15 +29,15 @@ Personne Muette is a communication platform designed to assist individuals with 
 
 ### Backend Setup
 
-1. Navigate to the `PMBackend` directory.
+1. Navigate to the `backend` directory.
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-3. Configure the database connection in `config/database.py`.
+3. Configure the database connection in `config/database.py` or `.env`.
 4. Run the backend server:
    ```bash
-   python app.py
+   flask run
    ```
 
 ### Frontend Setup
@@ -69,7 +69,7 @@ Personne Muette is a communication platform designed to assist individuals with 
 ## Project Structure
 
 - **Frontend**: `personnemuette` (Flutter app)
-- **Backend**: `PMBackend` (Flask app)
+- **Backend**: `backend` (Flask app)
 - **Database**: `databasecode.sql` (SQL schema)
 
 ## Contributing
