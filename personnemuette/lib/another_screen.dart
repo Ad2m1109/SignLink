@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:camera/camera.dart';
-import 'main.dart'; // Import to access the 'cameras' list
+import 'main.dart';
+import 'theme/app_theme.dart';
 
 class AnotherScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue, // Changed background color to purple
-      body: GestureToSpeechScreen(),
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: GestureToSpeechScreen(),
+      ),
     );
   }
 }
@@ -20,7 +25,7 @@ class GestureToSpeechScreen extends StatefulWidget {
 
 class _GestureToSpeechScreenState extends State<GestureToSpeechScreen> {
   final FlutterTts flutterTts = FlutterTts();
-  String gestureText = "Aucun geste détecté";
+  String gestureText = "No gesture detected";
   CameraController? _controller;
 
   @override
@@ -62,7 +67,7 @@ class _GestureToSpeechScreenState extends State<GestureToSpeechScreen> {
   }
 
   Future<void> speak(String text) async {
-    await flutterTts.setLanguage("fr-FR");
+    await flutterTts.setLanguage("en-US");
     await flutterTts.setSpeechRate(0.5);
     await flutterTts.speak(text);
   }
@@ -71,74 +76,153 @@ class _GestureToSpeechScreenState extends State<GestureToSpeechScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // App Bar
+        Container(
+          padding: const EdgeInsets.all(AppTheme.spacing16),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const SizedBox(width: AppTheme.spacing8),
+              Text(
+                "Guest Mode",
+                style: GoogleFonts.outfit(
+                  fontSize: AppTheme.fontSizeTitle,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Camera Preview
         Expanded(
           flex: 7,
-          child: _controller != null && _controller!.value.isInitialized
-              ? CameraPreview(_controller!)
-              : Center(child: CircularProgressIndicator()),
+          child: Container(
+            margin: const EdgeInsets.all(AppTheme.spacing16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+              boxShadow: AppTheme.elevatedShadow,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _controller != null && _controller!.value.isInitialized
+                ? CameraPreview(_controller!)
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: AppTheme.primaryColor,
+                        ),
+                        const SizedBox(height: AppTheme.spacing16),
+                        Text(
+                          "Initializing camera...",
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: AppTheme.fontSizeBody,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
         ),
+        
+        // Control Panel
         Expanded(
           flex: 3,
           child: Container(
-            padding: EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppTheme.spacing24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppTheme.radiusXLarge),
+                topRight: Radius.circular(AppTheme.radiusXLarge),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
-                  blurRadius: 5,
-                  spreadRadius: 3,
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
                 ),
               ],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Gesture Display
                 Container(
-                  padding: EdgeInsets.all(16.0),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppTheme.spacing20),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple[50],
-                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryColor.withOpacity(0.1),
+                        AppTheme.secondaryColor.withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                    border: Border.all(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      width: 2,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.gesture, color: Colors.deepPurple, size: 24),
-                      SizedBox(width: 10),
-                      Text(
-                        gestureText,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple,
+                      Icon(
+                        Icons.gesture,
+                        color: AppTheme.primaryColor,
+                        size: 28,
+                      ),
+                      const SizedBox(width: AppTheme.spacing12),
+                      Flexible(
+                        child: Text(
+                          gestureText,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.outfit(
+                            fontSize: AppTheme.fontSizeTitle,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    speak(gestureText);
-                  },
-                  icon: Icon(Icons.mic, color: Colors.white),
-                  label: Text(
-                    'Parler',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                ).animate().fadeIn().scale(),
+                const SizedBox(height: AppTheme.spacing24),
+                
+                // Speak Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      speak(gestureText);
+                    },
+                    icon: const Icon(Icons.volume_up, size: 24),
+                    label: Text(
+                      'Speak',
+                      style: GoogleFonts.outfit(
+                        fontSize: AppTheme.fontSizeBody,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusMedium,
+                        ),
+                      ),
+                      elevation: AppTheme.elevationMedium,
                     ),
                   ),
-                ),
+                ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
               ],
             ),
           ),

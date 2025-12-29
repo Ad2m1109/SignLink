@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
-import 'package:flutter/foundation.dart';
-import 'dart:typed_data';
 import 'dart:io';
-import 'services/api_service.dart';
-import 'utils/user_preferences.dart';
-import 'conversation_page.dart';
 import 'main.dart';
+import 'theme/app_theme.dart';
 
 class SignLanguagePage extends StatefulWidget {
   @override
@@ -18,9 +15,9 @@ class SignLanguagePage extends StatefulWidget {
 
 class _SignLanguagePageState extends State<SignLanguagePage> {
   CameraController? _controller;
-  String gestureText = "Aucun geste détecté";
-  final FlutterTts flutterTts = FlutterTts();
-  final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions());
+  String gestureText = "No gesture detected";
+  final PoseDetector _poseDetector =
+      PoseDetector(options: PoseDetectorOptions());
   bool _isBusy = false;
 
   @override
@@ -35,7 +32,11 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
       return;
     }
 
-    _controller = CameraController(cameras[0], ResolutionPreset.medium, enableAudio: false);
+    _controller = CameraController(
+      cameras[0],
+      ResolutionPreset.medium,
+      enableAudio: false,
+    );
     _controller?.initialize().then((_) {
       if (!mounted) {
         return;
@@ -63,7 +64,7 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
       } else {
         if (mounted) {
           setState(() {
-            gestureText = "Aucun geste détecté";
+            gestureText = "No gesture detected";
           });
         }
       }
@@ -75,7 +76,6 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
   }
 
   void _analyzePose(Pose pose) {
-    // Simple logic: Check if right wrist is above right shoulder (Hello/Wave)
     final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist];
     final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
 
@@ -83,13 +83,13 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
       if (rightWrist.y < rightShoulder.y) {
         if (mounted) {
           setState(() {
-            gestureText = "Hello / Salut";
+            gestureText = "Hello / Wave";
           });
         }
       } else {
         if (mounted) {
           setState(() {
-            gestureText = "Aucun geste détecté";
+            gestureText = "No gesture detected";
           });
         }
       }
@@ -105,30 +105,21 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
     if (Platform.isIOS) {
       rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
     } else if (Platform.isAndroid) {
-      var rotationCompensation = _orientations[_controller!.value.deviceOrientation];
+      var rotationCompensation =
+          _orientations[_controller!.value.deviceOrientation];
       if (rotationCompensation == null) return null;
       if (camera.lensDirection == CameraLensDirection.front) {
-        // front-facing
-        rotationCompensation = (sensorOrientation + rotationCompensation) % 360;
+        rotationCompensation =
+            (sensorOrientation + rotationCompensation) % 360;
       } else {
-        // back-facing
-        rotationCompensation = (sensorOrientation - rotationCompensation + 360) % 360;
+        rotationCompensation =
+            (sensorOrientation - rotationCompensation + 360) % 360;
       }
       rotation = InputImageRotationValue.fromRawValue(rotationCompensation);
     }
     if (rotation == null) return null;
 
-    final format = InputImageFormatValue.fromRawValue(image.format.raw);
-    if (format == null || (Platform.isAndroid && format != InputImageFormat.nv21)) {
-       // On Android, only NV21 is supported by ML Kit directly from CameraImage for now in this snippet context
-       // However, newer versions might support YUV_420_888. Let's try basic support.
-       // If this fails, we might need more complex conversion.
-       // For now, returning null to avoid crash if format not supported.
-       // Note: CameraController with ResolutionPreset.medium usually gives YUV420 on Android.
-    }
-
-    // Basic plane concatenation for Android/iOS
-    if (image.planes.length != 1) return null; // Simplified for Linux/Basic
+    if (image.planes.length != 1) return null;
     final plane = image.planes.first;
 
     return InputImage.fromBytes(
@@ -136,7 +127,7 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
       metadata: InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
         rotation: rotation,
-        format: InputImageFormat.bgra8888, // Assuming Linux gives BGRA8888
+        format: InputImageFormat.bgra8888,
         bytesPerRow: plane.bytesPerRow,
       ),
     );
@@ -160,85 +151,154 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.blue,
-        title: Text("Sign Language"),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(
+          "Sign Language",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
       ),
       body: Column(
         children: [
+          // Camera Preview
           Expanded(
             flex: 7,
-            child: _controller != null && _controller!.value.isInitialized
-                ? CameraPreview(_controller!)
-                : Center(child: CircularProgressIndicator()),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(AppTheme.radiusXLarge),
+                ),
+                boxShadow: AppTheme.elevatedShadow,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _controller != null && _controller!.value.isInitialized
+                  ? CameraPreview(_controller!)
+                  : Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            color: AppTheme.primaryColor,
+                          ),
+                          const SizedBox(height: AppTheme.spacing16),
+                          Text(
+                            "Initializing camera...",
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: AppTheme.fontSizeBody,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
           ),
+          
+          // Control Panel
           Expanded(
             flex: 3,
             child: Container(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppTheme.spacing24),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppTheme.radiusXLarge),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.3),
-                    blurRadius: 5,
-                    spreadRadius: 3,
-                  ),
-                ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Gesture Display Card
                   Container(
-                    padding: EdgeInsets.all(16.0),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppTheme.spacing20),
                     decoration: BoxDecoration(
-                      color: Colors.deepPurple[50],
-                      borderRadius: BorderRadius.circular(10),
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryColor.withOpacity(0.1),
+                          AppTheme.secondaryColor.withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.radiusLarge),
+                      border: Border.all(
+                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        width: 2,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.gesture, color: Colors.deepPurple, size: 24),
-                        SizedBox(width: 10),
-                        Text(
-                          gestureText,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                        Icon(
+                          Icons.gesture,
+                          color: AppTheme.primaryColor,
+                          size: 28,
+                        ),
+                        const SizedBox(width: AppTheme.spacing12),
+                        Flexible(
+                          child: Text(
+                            gestureText,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(
+                              fontSize: AppTheme.fontSizeTitle,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      final message = gestureText.trim();
-                      if (message.isNotEmpty && message != "Aucun geste détecté") {
-                        Navigator.pop(context, message);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('No gesture detected to send')),
-                        );
-                      }
-                    },
-                    child: const Text("Send Text"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  ).animate().fadeIn().scale(),
+                  const SizedBox(height: AppTheme.spacing24),
+                  
+                  // Send Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final message = gestureText.trim();
+                        if (message.isNotEmpty &&
+                            message != "No gesture detected") {
+                          Navigator.pop(context, message);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content:
+                                  const Text('No gesture detected to send'),
+                              backgroundColor: AppTheme.warningColor,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusMedium,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.send, size: 22),
+                      label: Text(
+                        "Send Gesture",
+                        style: GoogleFonts.outfit(
+                          fontSize: AppTheme.fontSizeBody,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.successColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppTheme.spacing16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusMedium),
+                        ),
                       ),
                     ),
-                  ),
+                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
                 ],
               ),
             ),

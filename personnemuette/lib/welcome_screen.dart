@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'sign_in_page.dart';
 import 'sign_up_page.dart';
 import 'another_screen.dart';
+import 'theme/app_theme.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -9,174 +12,185 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          // Background image
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage("assets/welcombackground.jpg"),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          
-          // Content area
-          SafeArea(
-            child: Column(
-              children: [
-                // Title and subtitle section
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 120),
-                      child: RichText(
-                        textAlign: TextAlign.center,
-                        text: const TextSpan(
-                          children: [
-                            TextSpan(
-                              text: "Welcome to HandTalk!\n",
-                              style: TextStyle(
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.black,
-                              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Main Content
+              Column(
+                children: [
+                  // Logo and Title Section
+                  Expanded(
+                    flex: 3,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppTheme.spacing24),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
                             ),
-                            TextSpan(
-                              text: "Discover the power of language and communication.\n",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
+                            child: const Icon(
+                              Icons.waving_hand_rounded,
+                              size: 80,
+                              color: Colors.white,
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                
-                // Bottom buttons section
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => SignUpPage()),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 15),
-                                    decoration: BoxDecoration(
-                                      color: Colors.transparent,
-                                      borderRadius: BorderRadius.circular(30),
-                                      border: Border.all(color: Colors.black12),
-                                    ),
-                                    child: const Center(
-                                      child: Text(
-                                        "Sign Up",
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 15),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => SignInPage()),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 15),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(30),
-                                      border: Border.all(color: Colors.black12),
-                                    ),
-                                    child: const Center(
-                                      child: Text(
-                                        "Log In",
-                                        style: TextStyle(
-                                          color: Colors.blue,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          ).animate().scale(
+                            duration: 800.ms,
+                            curve: Curves.elasticOut,
                           ),
+                          const SizedBox(height: AppTheme.spacing32),
+                          Text(
+                            "HandTalk",
+                            style: GoogleFonts.outfit(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.3),
+                          const SizedBox(height: AppTheme.spacing12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppTheme.spacing40,
+                            ),
+                            child: Text(
+                              "Bridge the gap with sign language\nand connect with everyone",
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                fontSize: AppTheme.fontSizeBody,
+                                color: Colors.white.withOpacity(0.9),
+                                height: 1.5,
+                              ),
+                            ),
+                          ).animate().fadeIn(delay: 400.ms),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  // Buttons Section
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.all(AppTheme.spacing24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(AppTheme.radiusXLarge),
                         ),
                       ),
-                    ],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 55,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignUpPage(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: AppTheme.primaryColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusMedium,
+                                  ),
+                                ),
+                                elevation: AppTheme.elevationMedium,
+                              ),
+                              child: Text(
+                                "Get Started",
+                                style: GoogleFonts.outfit(
+                                  fontSize: AppTheme.fontSizeBody,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2),
+                          const SizedBox(height: AppTheme.spacing16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 55,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInPage(),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusMedium,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                "Sign In",
+                                style: GoogleFonts.outfit(
+                                  fontSize: AppTheme.fontSizeBody,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.2),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              // Guest Mode Button (Top Right)
+              Positioned(
+                top: AppTheme.spacing16,
+                right: AppTheme.spacing16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusRound),
+                    boxShadow: AppTheme.cardShadow,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.people_alt_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AnotherScreen(),
+                        ),
+                      );
+                    },
+                    tooltip: 'Guest Mode',
                   ),
                 ),
-              ],
-            ),
+              ).animate().fadeIn(delay: 800.ms).scale(),
+            ],
           ),
-          
-          // Invite mode icon button in the corner
-          Positioned(
-            top: 40, // Fixed position from top
-            right: 20, // Fixed position from right
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AnotherScreen()),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 3,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.people_alt_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

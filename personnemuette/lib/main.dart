@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'welcome_screen.dart';
 import 'utils/user_preferences.dart';
+import 'theme/app_theme.dart';
 
 List<CameraDescription> cameras = [];
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
@@ -31,42 +31,12 @@ class MyApp extends StatelessWidget {
       valueListenable: themeNotifier,
       builder: (context, currentMode, child) {
         return MaterialApp(
-          title: 'SignLink',
+          title: 'HandTalk',
           debugShowCheckedModeBanner: false,
           themeMode: currentMode,
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF6750A4), // Deep Purple
-              secondary: const Color(0xFF03DAC6), // Teal
-              brightness: Brightness.light,
-            ),
-            textTheme: GoogleFonts.outfitTextTheme(),
-            scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-            appBarTheme: const AppBarTheme(
-              centerTitle: true,
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.black,
-            ),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF6750A4),
-              secondary: const Color(0xFF03DAC6),
-              brightness: Brightness.dark,
-            ),
-            textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
-            scaffoldBackgroundColor: Colors.black,
-            appBarTheme: const AppBarTheme(
-              centerTitle: true,
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.white,
-            ),
-          ),
-          home: WelcomeScreen(),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          home: const WelcomeScreen(),
         );
       },
     );
