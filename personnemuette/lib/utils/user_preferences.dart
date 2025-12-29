@@ -115,4 +115,17 @@ class UserPreferences {
       throw Exception('Failed to clear remembered credentials: $e');
     }
   }
+
+  // Theme Preference
+  static const _keyIsDarkMode = 'isDarkMode';
+
+  static Future<void> saveThemeMode(bool isDarkMode) async {
+    final prefs = await _getPrefs();
+    await prefs.setBool(_keyIsDarkMode, isDarkMode);
+  }
+
+  static Future<bool> getThemeMode() async {
+    final prefs = await _getPrefs();
+    return prefs.getBool(_keyIsDarkMode) ?? false;
+  }
 }

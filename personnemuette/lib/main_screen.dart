@@ -6,6 +6,7 @@ import 'sign_in_page.dart';
 import 'services/api_service.dart';
 import 'utils/user_preferences.dart';
 import 'conversation_page.dart';
+import 'main.dart'; // Import main.dart to access themeNotifier
 
 class HomePage extends StatefulWidget {
   @override
@@ -16,7 +17,6 @@ class _HomePageState extends State<HomePage> {
   String userName = "Loading...";
   List<String> friends = [];
   List<String> filteredFriends = []; // Add a filtered list
-  bool isDarkMode = false;
   final TextEditingController _searchController =
       TextEditingController(); // Add a search controller
 
@@ -66,9 +66,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _toggleDarkMode() {
-    setState(() {
-      isDarkMode = !isDarkMode;
-    });
+    final isDark = themeNotifier.value == ThemeMode.dark;
+    themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
+    UserPreferences.saveThemeMode(!isDark);
   }
 
   void _showCloseAccountDialog() {
@@ -109,6 +109,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false, // Disable the back arrow
@@ -121,7 +123,7 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.dark_mode),
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
             onPressed: _toggleDarkMode,
           ),
           IconButton(
