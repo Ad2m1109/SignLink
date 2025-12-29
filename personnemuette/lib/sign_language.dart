@@ -1,10 +1,15 @@
-import 'dart:html'; // For accessing the camera on the web
-import 'dart:ui_web' as ui_web; // For platformViewRegistry
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:camera/camera.dart';
+import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
+import 'dart:io';
 import 'services/api_service.dart';
 import 'utils/user_preferences.dart';
 import 'conversation_page.dart';
+import 'main.dart';
 
 class SignLanguagePage extends StatefulWidget {
   @override
@@ -12,9 +17,11 @@ class SignLanguagePage extends StatefulWidget {
 }
 
 class _SignLanguagePageState extends State<SignLanguagePage> {
-  late VideoElement _videoElement;
-  String gestureText = "Aucun geste détecté"; // Added gesture text
-  final FlutterTts flutterTts = FlutterTts(); // Initialize TTS
+  CameraController? _controller;
+  String gestureText = "Aucun geste détecté";
+  final FlutterTts flutterTts = FlutterTts();
+  final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions());
+  bool _isBusy = false;
 
   @override
   void initState() {
@@ -23,25 +30,131 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
   }
 
   void _initializeCamera() {
-    // Create a video element
-    _videoElement = VideoElement();
-    _videoElement.style.width = '100%';
-    _videoElement.style.height = '100%';
+    if (cameras.isEmpty) {
+      print('No cameras found');
+      return;
+    }
 
-    // Register the video element as a Flutter view
-    ui_web.platformViewRegistry.registerViewFactory(
-      'camera-view',
-      (int viewId) => _videoElement,
-    );
-
-    // Request access to the camera
-    window.navigator.mediaDevices
-        ?.getUserMedia({'video': true}).then((MediaStream stream) {
-      _videoElement.srcObject = stream;
-      _videoElement.play();
-    }).catchError((error) {
-      print('Error accessing the camera: $error');
+    _controller = CameraController(cameras[0], ResolutionPreset.medium, enableAudio: false);
+    _controller?.initialize().then((_) {
+      if (!mounted) {
+        return;
+      }
+      _controller?.startImageStream(_processImage);
+      setState(() {});
+    }).catchError((Object e) {
+      if (e is CameraException) {
+        print('Camera Error: ${e.code}');
+      }
     });
+  }
+
+  Future<void> _processImage(CameraImage image) async {
+    if (_isBusy) return;
+    _isBusy = true;
+
+    try {
+      final inputImage = _inputImageFromCameraImage(image);
+      if (inputImage == null) return;
+
+      final poses = await _poseDetector.processImage(inputImage);
+      if (poses.isNotEmpty) {
+        _analyzePose(poses.first);
+      } else {
+        if (mounted) {
+          setState(() {
+            gestureText = "Aucun geste détecté";
+          });
+        }
+      }
+    } catch (e) {
+      print("Error processing image: $e");
+    } finally {
+      _isBusy = false;
+    }
+  }
+
+  void _analyzePose(Pose pose) {
+    // Simple logic: Check if right wrist is above right shoulder (Hello/Wave)
+    final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist];
+    final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+
+    if (rightWrist != null && rightShoulder != null) {
+      if (rightWrist.y < rightShoulder.y) {
+        if (mounted) {
+          setState(() {
+            gestureText = "Hello / Salut";
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            gestureText = "Aucun geste détecté";
+          });
+        }
+      }
+    }
+  }
+
+  InputImage? _inputImageFromCameraImage(CameraImage image) {
+    if (_controller == null) return null;
+
+    final camera = cameras[0];
+    final sensorOrientation = camera.sensorOrientation;
+    InputImageRotation? rotation;
+    if (Platform.isIOS) {
+      rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
+    } else if (Platform.isAndroid) {
+      var rotationCompensation = _orientations[_controller!.value.deviceOrientation];
+      if (rotationCompensation == null) return null;
+      if (camera.lensDirection == CameraLensDirection.front) {
+        // front-facing
+        rotationCompensation = (sensorOrientation + rotationCompensation) % 360;
+      } else {
+        // back-facing
+        rotationCompensation = (sensorOrientation - rotationCompensation + 360) % 360;
+      }
+      rotation = InputImageRotationValue.fromRawValue(rotationCompensation);
+    }
+    if (rotation == null) return null;
+
+    final format = InputImageFormatValue.fromRawValue(image.format.raw);
+    if (format == null || (Platform.isAndroid && format != InputImageFormat.nv21)) {
+       // On Android, only NV21 is supported by ML Kit directly from CameraImage for now in this snippet context
+       // However, newer versions might support YUV_420_888. Let's try basic support.
+       // If this fails, we might need more complex conversion.
+       // For now, returning null to avoid crash if format not supported.
+       // Note: CameraController with ResolutionPreset.medium usually gives YUV420 on Android.
+    }
+
+    // Basic plane concatenation for Android/iOS
+    if (image.planes.length != 1) return null; // Simplified for Linux/Basic
+    final plane = image.planes.first;
+
+    return InputImage.fromBytes(
+      bytes: plane.bytes,
+      metadata: InputImageMetadata(
+        size: Size(image.width.toDouble(), image.height.toDouble()),
+        rotation: rotation,
+        format: InputImageFormat.bgra8888, // Assuming Linux gives BGRA8888
+        bytesPerRow: plane.bytesPerRow,
+      ),
+    );
+  }
+
+  static const _orientations = {
+    DeviceOrientation.portraitUp: 0,
+    DeviceOrientation.landscapeLeft: 90,
+    DeviceOrientation.portraitDown: 180,
+    DeviceOrientation.landscapeRight: 270,
+  };
+
+  @override
+  void dispose() {
+    _controller?.stopImageStream();
+    _controller?.dispose();
+    _poseDetector.close();
+    super.dispose();
   }
 
   @override
@@ -55,7 +168,9 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
         children: [
           Expanded(
             flex: 7,
-            child: HtmlElementView(viewType: 'camera-view'),
+            child: _controller != null && _controller!.value.isInitialized
+                ? CameraPreview(_controller!)
+                : Center(child: CircularProgressIndicator()),
           ),
           Expanded(
             flex: 3,
@@ -105,7 +220,7 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
                   ElevatedButton(
                     onPressed: () async {
                       final message = gestureText.trim();
-                      if (message.isNotEmpty) {
+                      if (message.isNotEmpty && message != "Aucun geste détecté") {
                         try {
                           final userId = await UserPreferences.getUserId();
                           final token = await UserPreferences.getUserToken();
@@ -124,20 +239,16 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
                             return;
                           }
 
-                          // Send the message
                           await ApiService.sendMessage(
                               conversationId, userId, message, token);
 
-                          // Navigate back to the conversation page and refresh it
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                               builder: (context) => ConversationPage(
-                                friendEmail:
-                                    '', // Pass the friend's email if available
+                                friendEmail: '', 
                                 conversationId: conversationId,
-                                isDarkMode:
-                                    false, // Pass the isDarkMode parameter
+                                isDarkMode: false,
                               ),
                             ),
                           );

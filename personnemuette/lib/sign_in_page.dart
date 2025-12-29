@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'sign_up_page.dart';
 import 'services/api_service.dart';
 import 'utils/user_preferences.dart';
@@ -17,18 +19,16 @@ class _SignInPageState extends State<SignInPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool rememberPassword = true;
-  String errorMessage = '';
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Load saved credentials when the page initializes
     _loadSavedCredentials();
   }
 
   Future<void> _loadSavedCredentials() async {
     final savedCredentials = await UserPreferences.getRememberedCredentials();
-
     setState(() {
       _emailController.text = savedCredentials['email'];
       _passwordController.text = savedCredentials['password'];
@@ -43,43 +43,41 @@ class _SignInPageState extends State<SignInPage> {
     super.dispose();
   }
 
-  // Modified method to handle sign-in action and store user info
   Future<void> signInUser() async {
     if (_formSignInKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
       try {
         final response = await ApiService.signIn(
             _emailController.text.trim(), _passwordController.text.trim());
 
         final userId = response['userId'].toString();
-        final name = response['name']; // Fetch the user's name
+        final name = response['name'];
         final email = _emailController.text.trim();
         final token = response['token'];
 
-        await UserPreferences.saveUserInfo(
-            userId, name, email); // Save the name
+        await UserPreferences.saveUserInfo(userId, name, email);
         await UserPreferences.saveUserToken(token);
-
         await UserPreferences.saveRememberedCredentials(
             _emailController.text.trim(),
             _passwordController.text.trim(),
             rememberPassword);
 
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Login successful")));
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomePage()),
+          );
+        }
       } catch (e) {
-        setState(() {
-          errorMessage = e.toString();
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Login failed: ${e.toString()}'),
-          backgroundColor: Colors.blue,
-        ));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Login failed: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -87,170 +85,151 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.blue,
-        elevation: 0,
-      ),
-      extendBodyBehindAppBar: true,
-      body: Column(
-        children: [
-          const Expanded(
-            flex: 1,
-            child: SizedBox(height: 10),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF6750A4), Color(0xFF03DAC6)],
           ),
-          Expanded(
-            flex: 7,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(25, 50, 25, 20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(40),
-                  topRight: Radius.circular(40),
-                ),
-              ),
-              child: SingleChildScrollView(
-                child: Form(
-                  key: _formSignInKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Welcome Back!",
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.waving_hand_rounded,
+                        size: 80, color: Colors.white)
+                    .animate()
+                    .scale(duration: 600.ms, curve: Curves.easeOutBack),
+                const SizedBox(height: 20),
+                Text(
+                  "Welcome Back!",
+                  style: GoogleFonts.outfit(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.3),
+                const SizedBox(height: 40),
+                Container(
+                  padding: const EdgeInsets.all(30),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
-                      const SizedBox(height: 25),
-                      // Email TextField
-                      TextFormField(
-                        controller: _emailController,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your E-mail';
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          label: const Text('E-mail'),
-                          hintText: "Enter E-mail",
-                          hintStyle: const TextStyle(color: Colors.blue),
-                          border: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.black54),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.black54),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      // Password TextField
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        obscuringCharacter: '*',
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your Password';
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          label: const Text('Password'),
-                          hintText: "Enter Password",
-                          hintStyle: const TextStyle(color: Colors.blue),
-                          border: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.black54),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.black54),
+                    ],
+                  ),
+                  child: Form(
+                    key: _formSignInKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _emailController,
+                          validator: (value) => (value == null || value.isEmpty)
+                              ? 'Please enter your E-mail'
+                              : null,
+                          decoration: InputDecoration(
+                            labelText: 'E-mail',
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[100],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 25),
-                      // Remember me and Forgot Password row
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          validator: (value) => (value == null || value.isEmpty)
+                              ? 'Please enter your Password'
+                              : null,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        Row(
                           children: [
-                            // Remember Me Checkbox
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Transform.scale(
-                                  scale: 0.9, // Make checkbox slightly smaller
-                                  child: Checkbox(
-                                    value: rememberPassword,
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        rememberPassword = value!;
-                                      });
-                                    },
+                            Checkbox(
+                              value: rememberPassword,
+                              activeColor: Theme.of(context).primaryColor,
+                              onChanged: (val) =>
+                                  setState(() => rememberPassword = val!),
+                            ),
+                            Text("Remember me",
+                                style: TextStyle(color: Colors.grey[700])),
+                          ],
+                        ),
+                        const SizedBox(height: 25),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 55,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : signInUser,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                : const Text(
+                                    "Sign In",
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold),
                                   ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text("Don't have an account? ",
+                                style: TextStyle(color: Colors.grey[600])),
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const SignUpPage()),
+                              ),
+                              child: Text(
+                                "Sign Up",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).primaryColor,
                                 ),
-                                const Text(
-                                  "Remember me",
-                                  style: TextStyle(
-                                    color: Colors.black54,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 25),
-                      // Sign In Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: signInUser,
-                          child: const Text(
-                            "Sign In",
-                            style: TextStyle(
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      // Sign Up navigation
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text("Don't have an account? "),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SignUpPage(),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              "Sign Up",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
+              ],
             ),
-          )
-        ],
+          ),
+        ),
       ),
     );
   }

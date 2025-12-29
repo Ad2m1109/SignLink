@@ -19,12 +19,6 @@ android {
     namespace "com.example.personnemuette"
     compileSdk 35
 
-    // For tflite_flutter compatibility
-    aaptOptions {
-        noCompress 'tflite'
-        noCompress 'lite'
-    }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -46,8 +40,7 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.debug
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled false
         }
     }
 
@@ -64,7 +57,4 @@ flutter {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.20"
     implementation 'androidx.multidex:multidex:2.0.1'
-    // Add tflite_flutter dependencies if needed
-    implementation 'org.tensorflow:tensorflow-lite:2.14.0'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:2.14.0'
 }

@@ -15,8 +15,8 @@ def login_user_route():
     user = authenticate_user(data['email'], data['password'])
     if user:
         return jsonify({
-            'userId': user['id'],
-            'name': user['name'],
+            'userId': user.id,
+            'name': user.name,
             'token': 'dummy_token'  # Replace with actual token generation logic
         }), 200
     return jsonify({'message': 'Invalid email or password'}), 401

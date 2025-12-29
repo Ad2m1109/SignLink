@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'dart:html'; // For accessing the camera on the web
-import 'dart:ui_web' as ui_web;
+import 'package:camera/camera.dart';
+import 'main.dart'; // Import to access the 'cameras' list
 
 class AnotherScreen extends StatelessWidget {
   @override
@@ -21,7 +21,7 @@ class GestureToSpeechScreen extends StatefulWidget {
 class _GestureToSpeechScreenState extends State<GestureToSpeechScreen> {
   final FlutterTts flutterTts = FlutterTts();
   String gestureText = "Aucun geste détecté";
-  late VideoElement _videoElement;
+  CameraController? _controller;
 
   @override
   void initState() {
@@ -30,25 +30,35 @@ class _GestureToSpeechScreenState extends State<GestureToSpeechScreen> {
   }
 
   void _initializeCamera() {
-    // Create a video element
-    _videoElement = VideoElement();
-    _videoElement.style.width = '100%';
-    _videoElement.style.height = '100%';
+    if (cameras.isEmpty) {
+      print('No cameras found');
+      return;
+    }
 
-    // Register the video element as a Flutter view
-    ui_web.platformViewRegistry.registerViewFactory(
-      'camera-view',
-      (int viewId) => _videoElement,
-    );
-
-    // Request access to the camera
-    window.navigator.mediaDevices
-        ?.getUserMedia({'video': true}).then((MediaStream stream) {
-      _videoElement.srcObject = stream;
-      _videoElement.play();
-    }).catchError((error) {
-      print('Error accessing the camera: $error');
+    _controller = CameraController(cameras[0], ResolutionPreset.max);
+    _controller?.initialize().then((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
+    }).catchError((Object e) {
+      if (e is CameraException) {
+        switch (e.code) {
+          case 'CameraAccessDenied':
+            print('User denied camera access.');
+            break;
+          default:
+            print('Handle other errors.');
+            break;
+        }
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
   }
 
   Future<void> speak(String text) async {
@@ -63,7 +73,9 @@ class _GestureToSpeechScreenState extends State<GestureToSpeechScreen> {
       children: [
         Expanded(
           flex: 7,
-          child: HtmlElementView(viewType: 'camera-view'),
+          child: _controller != null && _controller!.value.isInitialized
+              ? CameraPreview(_controller!)
+              : Center(child: CircularProgressIndicator()),
         ),
         Expanded(
           flex: 3,
