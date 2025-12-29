@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'another_screen.dart';
+
 import 'invitations/invitations_page.dart';
 import 'about_page.dart';
 import 'sign_in_page.dart';
@@ -12,8 +12,9 @@ import 'main.dart';
 import 'theme/app_theme.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
   @override
-  _HomePageState createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
@@ -273,7 +274,6 @@ class _HomePageState extends State<HomePage> {
                                               ConversationPage(
                                             friendEmail: filteredFriends[index],
                                             conversationId: conversationId,
-                                            isDarkMode: isDarkMode,
                                           ),
                                         ),
                                       );

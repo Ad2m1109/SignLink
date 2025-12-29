@@ -1,22 +1,20 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/api_service.dart';
 import 'utils/user_preferences.dart';
 import 'sign_language.dart';
+import 'theme/app_theme.dart';
 
 class ConversationPage extends StatefulWidget {
   final String friendEmail;
   final String conversationId;
-  final bool isDarkMode;
 
   const ConversationPage({
     super.key,
     required this.friendEmail,
     required this.conversationId,
-    required this.isDarkMode,
   });
 
   @override
@@ -74,7 +72,10 @@ class _ConversationPageState extends State<ConversationPage> {
       if (mounted && !isPolling) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load messages: $e')),
+          SnackBar(
+            content: Text('Failed to load messages: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
         );
       }
     }
@@ -148,7 +149,10 @@ class _ConversationPageState extends State<ConversationPage> {
             messages.removeWhere((msg) => msg['isSending'] == true);
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to send message: $e')),
+            SnackBar(
+              content: Text('Failed to send message: $e'),
+              backgroundColor: AppTheme.errorColor,
+            ),
           );
         }
       }
@@ -158,6 +162,7 @@ class _ConversationPageState extends State<ConversationPage> {
   Widget _buildMessageBubble(Map<String, dynamic> message, int index) {
     final isMyMessage = message['iduser'].toString() == userId.toString();
     final isSending = message['isSending'] == true;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Align(
       alignment: isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
@@ -171,29 +176,18 @@ class _ConversationPageState extends State<ConversationPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           gradient: isMyMessage
-              ? LinearGradient(
-                  colors: [
-                    Theme.of(context).primaryColor,
-                    Theme.of(context).colorScheme.secondary
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
+              ? AppTheme.primaryGradient
               : null,
-          color: isMyMessage ? null : Colors.white,
+          color: isMyMessage
+              ? null
+              : (isDark ? AppTheme.surfaceDark : Colors.white),
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: isMyMessage ? const Radius.circular(20) : Radius.zero,
-            bottomRight: isMyMessage ? Radius.zero : const Radius.circular(20),
+            topLeft: const Radius.circular(AppTheme.radiusXLarge),
+            topRight: const Radius.circular(AppTheme.radiusXLarge),
+            bottomLeft: isMyMessage ? const Radius.circular(AppTheme.radiusXLarge) : Radius.zero,
+            bottomRight: isMyMessage ? Radius.zero : const Radius.circular(AppTheme.radiusXLarge),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: AppTheme.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,8 +196,10 @@ class _ConversationPageState extends State<ConversationPage> {
             Text(
               message['contenu'],
               style: GoogleFonts.outfit(
-                color: isMyMessage ? Colors.white : Colors.black87,
-                fontSize: 16,
+                color: isMyMessage
+                    ? Colors.white
+                    : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+                fontSize: AppTheme.fontSizeBody,
               ),
             ),
             const SizedBox(height: 4),
@@ -213,7 +209,9 @@ class _ConversationPageState extends State<ConversationPage> {
                 Text(
                   _formatTimestamp(message['timestamp'] ?? ''),
                   style: TextStyle(
-                    color: isMyMessage ? Colors.white70 : Colors.grey[500],
+                    color: isMyMessage
+                        ? Colors.white70
+                        : (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
                     fontSize: 10,
                   ),
                 ),
@@ -240,159 +238,141 @@ class _ConversationPageState extends State<ConversationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(friendName, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(friendName),
         flexibleSpace: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).primaryColor.withOpacity(0.1),
-                Colors.white
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
+            gradient: AppTheme.subtleGradient(context),
           ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFF5F5F5),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : messages.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.chat_bubble_outline,
-                                  size: 60, color: Colors.grey[400]),
-                              const SizedBox(height: 10),
-                              Text(
-                                "No messages yet.\nStart a conversation!",
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.outfit(
-                                  color: Colors.grey[500],
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            return _buildMessageBubble(messages[index], index);
-                          },
-                        ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-              ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    if (isWritingMessage)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _messageController,
-                              decoration: InputDecoration(
-                                hintText: "Type a message...",
-                                hintStyle: GoogleFonts.outfit(color: Colors.grey[400]),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 12),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                  borderSide: BorderSide.none,
-                                ),
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                              ),
-                              textCapitalization: TextCapitalization.sentences,
-                              onSubmitted: (_) => _sendMessage(),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          FloatingActionButton(
-                            onPressed: () => _sendMessage(),
-                            mini: true,
-                            elevation: 0,
-                            backgroundColor: Theme.of(context).primaryColor,
-                            child: const Icon(Icons.send, color: Colors.white, size: 20),
-                          ),
-                        ],
-                      ).animate().fadeIn(),
-                    if (!isWritingMessage)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => setState(() => isWritingMessage = true),
-                              icon: const Icon(Icons.keyboard),
-                              label: const Text("Text"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SignLanguagePage(),
-                                  ),
-                                );
-                                if (result != null && result is String) {
-                                  _sendMessage(content: result);
-                                }
-                              },
-                              icon: const Icon(Icons.back_hand),
-                              label: const Text("Sign"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.secondary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ).animate().slideY(begin: 0.5, curve: Curves.easeOutBack),
-                  ],
+      body: Column(
+        children: [
+          Expanded(
+            child: isLoading
+                ? AppComponents.loading()
+                : messages.isEmpty
+                    ? AppComponents.emptyState(
+                        icon: Icons.chat_bubble_outline,
+                        title: "No messages yet",
+                        subtitle: "Start a conversation!",
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          return _buildMessageBubble(messages[index], index);
+                        },
+                      ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(AppTheme.spacing16),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.surfaceDark : Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
                 ),
+              ],
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  if (isWritingMessage)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _messageController,
+                            decoration: InputDecoration(
+                              hintText: "Type a message...",
+                              hintStyle: GoogleFonts.outfit(
+                                color: isDark ? Colors.grey[400] : Colors.grey[500],
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
+                            ),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                            textCapitalization: TextCapitalization.sentences,
+                            onSubmitted: (_) => _sendMessage(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        FloatingActionButton(
+                          onPressed: () => _sendMessage(),
+                          mini: true,
+                          elevation: 0,
+                          backgroundColor: AppTheme.primaryColor,
+                          child: const Icon(Icons.send, color: Colors.white, size: 20),
+                        ),
+                      ],
+                    ).animate().fadeIn(),
+                  if (!isWritingMessage)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => setState(() => isWritingMessage = true),
+                            icon: const Icon(Icons.keyboard),
+                            label: const Text("Text"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SignLanguagePage(),
+                                ),
+                              );
+                              if (result != null && result is String) {
+                                _sendMessage(content: result);
+                              }
+                            },
+                            icon: const Icon(Icons.back_hand),
+                            label: const Text("Sign"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.secondaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ).animate().slideY(begin: 0.5, curve: Curves.easeOutBack),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

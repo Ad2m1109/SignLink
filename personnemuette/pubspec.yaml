@@ -1,5 +1,5 @@
-name: SignLink 
-description: "A new Flutter project."
+name: HandTalk 
+description: "HandTalk is a Flutter-based communication application designed to break down barriers for individuals with speech impairments. Using real-time sign language recognition and text-to-speech conversion, HandTalk empowers everyone to communicate naturally and effortlessly."
 publish_to: 'none'
 
 version: 1.0.0+1

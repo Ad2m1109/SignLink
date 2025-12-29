@@ -12,7 +12,7 @@ Future<void> main() async {
   try {
     cameras = await availableCameras();
   } catch (e) {
-    print('Error in fetching the cameras: $e');
+    debugPrint('Error in fetching the cameras: $e');
   }
   
   // Load saved theme preference

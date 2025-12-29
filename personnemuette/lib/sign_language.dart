@@ -9,8 +9,10 @@ import 'main.dart';
 import 'theme/app_theme.dart';
 
 class SignLanguagePage extends StatefulWidget {
+  const SignLanguagePage({super.key});
+
   @override
-  _SignLanguagePageState createState() => _SignLanguagePageState();
+  State<SignLanguagePage> createState() => _SignLanguagePageState();
 }
 
 class _SignLanguagePageState extends State<SignLanguagePage> {
@@ -28,7 +30,7 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
 
   void _initializeCamera() {
     if (cameras.isEmpty) {
-      print('No cameras found');
+      debugPrint('No cameras found');
       return;
     }
 
@@ -45,7 +47,7 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
       setState(() {});
     }).catchError((Object e) {
       if (e is CameraException) {
-        print('Camera Error: ${e.code}');
+        debugPrint('Camera Error: ${e.code}');
       }
     });
   }
@@ -69,7 +71,7 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
         }
       }
     } catch (e) {
-      print("Error processing image: $e");
+      debugPrint("Error processing image: $e");
     } finally {
       _isBusy = false;
     }

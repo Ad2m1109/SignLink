@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'sign_in_page.dart';
 import 'services/api_service.dart';
-import 'main_screen.dart';
+
 import 'theme/app_theme.dart';
 
 class SignUpPage extends StatefulWidget {
