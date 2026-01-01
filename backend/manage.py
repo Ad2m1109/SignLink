@@ -2,7 +2,7 @@ import os
 import pymysql
 import click
 from dotenv import load_dotenv
-from flask.cli import with_appcontext, run_command as flask_run_command
+from flask.cli import with_appcontext
 from flask_migrate import upgrade
 
 load_dotenv()
@@ -30,24 +30,3 @@ def create_database_if_not_exists():
     except Exception as e:
         print(f"An error occurred during DB creation: {e}")
         exit(1)
-
-@click.command(name='start')
-@click.pass_context
-@with_appcontext
-def start(ctx):
-    """Creates DB, runs migrations, and starts the server."""
-    print("--- Starting Application ---")
-
-    print("1. Ensuring database exists...")
-    create_database_if_not_exists()
-
-    print("2. Applying database migrations...")
-    try:
-        upgrade()
-        print("Migrations applied successfully.")
-    except Exception as e:
-        print(f"Could not apply migrations: {e}")
-        print("HINT: You might need to create an initial migration with 'flask db migrate -m \"Initial migration\"'")
-
-    print("3. Starting development server...")
-    ctx.invoke(flask_run_command)

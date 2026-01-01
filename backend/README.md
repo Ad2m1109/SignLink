@@ -24,7 +24,7 @@ This is the Flask backend for the HandTalk application. It handles user authenti
 
 3.  **Run the Server:**
     ```bash
-    flask run
+    python3 run.py
     ```
     The server will start at `http://127.0.0.1:5000`.
 

@@ -37,7 +37,7 @@ HandTalk is a communication platform designed to assist individuals with speech 
 3. Configure the database connection in `config/database.py` or `.env`.
 4. Run the backend server:
    ```bash
-   flask run
+   python3 run.py
    ```
 
 ### Frontend Setup

@@ -4,9 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+import 'dart:async';
+import 'dart:math' as math;
 import 'main.dart';
 import 'theme/app_theme.dart';
+import 'services/socket_service.dart';
+import 'services/api_service.dart';
 
 class SignLanguagePage extends StatefulWidget {
   const SignLanguagePage({super.key});
@@ -18,19 +22,46 @@ class SignLanguagePage extends StatefulWidget {
 class _SignLanguagePageState extends State<SignLanguagePage> {
   CameraController? _controller;
   String gestureText = "No gesture detected";
-  final PoseDetector _poseDetector =
-      PoseDetector(options: PoseDetectorOptions());
+  PoseDetector? _poseDetector;
   bool _isBusy = false;
+  bool get _isMobile => !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+  Timer? _mockTimer;
+  
+  // Sliding window buffer
+  final List<List<double>> _frameBuffer = [];
+  static const int _windowSize = 30;
 
   @override
   void initState() {
     super.initState();
+    _initializePoseDetector();
     _initializeCamera();
+    _initializeSocket();
+  }
+
+  void _initializeSocket() {
+    SocketService().connect(ApiService.baseUrl);
+    SocketService().predictionNotifier.addListener(() {
+      if (mounted) {
+        setState(() {
+          gestureText = SocketService().predictionNotifier.value;
+        });
+      }
+    });
+  }
+
+  void _initializePoseDetector() {
+    if (_isMobile) {
+      _poseDetector = PoseDetector(options: PoseDetectorOptions());
+    } else {
+      debugPrint("Running on non-mobile platform. ML Kit disabled. Using Mock Mode.");
+    }
   }
 
   void _initializeCamera() {
     if (cameras.isEmpty) {
-      debugPrint('No cameras found');
+      debugPrint('No cameras found. Starting Mock Timer.');
+      _startMockTimer();
       return;
     }
 
@@ -40,11 +71,20 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
       enableAudio: false,
     );
     _controller?.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      _controller?.startImageStream(_processImage);
+      if (!mounted) return;
       setState(() {});
+
+      // startImageStream is only supported on Android/iOS
+      if (_isMobile) {
+        _controller?.startImageStream((image) {
+          if (_isBusy) return;
+          _isBusy = true;
+          _processCameraImage(image);
+        });
+      } else {
+        debugPrint("Camera stream not supported on this platform. Using Mock Mode.");
+        _startMockTimer();
+      }
     }).catchError((Object e) {
       if (e is CameraException) {
         debugPrint('Camera Error: ${e.code}');
@@ -52,23 +92,25 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
     });
   }
 
-  Future<void> _processImage(CameraImage image) async {
-    if (_isBusy) return;
-    _isBusy = true;
-
+  Future<void> _processCameraImage(CameraImage image) async {
     try {
-      final inputImage = _inputImageFromCameraImage(image);
-      if (inputImage == null) return;
+      if (_isMobile && _poseDetector != null) {
+        final inputImage = _inputImageFromCameraImage(image);
+        if (inputImage == null) return;
 
-      final poses = await _poseDetector.processImage(inputImage);
-      if (poses.isNotEmpty) {
-        _analyzePose(poses.first);
-      } else {
-        if (mounted) {
-          setState(() {
-            gestureText = "No gesture detected";
-          });
+        final poses = await _poseDetector!.processImage(inputImage);
+        if (poses.isNotEmpty) {
+          _analyzePose(poses.first);
+        } else {
+          if (mounted) {
+            setState(() {
+              gestureText = "No gesture detected";
+            });
+          }
         }
+      } else {
+        // Mock Mode for Linux/Web
+        _generateMockPose();
       }
     } catch (e) {
       debugPrint("Error processing image: $e");
@@ -77,25 +119,110 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
     }
   }
 
+  void _startMockTimer() {
+    _mockTimer?.cancel();
+    _mockTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (mounted) {
+        _generateMockPose();
+      }
+    });
+  }
+
+  void _generateMockPose() {
+    // Generate 33 random landmarks to simulate movement
+    List<double> mockKeypoints = [];
+    final random = math.Random();
+    for (int i = 0; i < 99; i++) {
+      mockKeypoints.add(random.nextDouble());
+    }
+
+    final normalized = _normalizeKeypoints(mockKeypoints, 33);
+    _frameBuffer.add(normalized);
+    if (_frameBuffer.length > _windowSize) {
+      _frameBuffer.removeAt(0);
+    }
+
+    if (_frameBuffer.length == _windowSize) {
+      _streamSequenceToBackend();
+    }
+
+    if (mounted) {
+      setState(() {
+        gestureText = "Mock Tracking (Linux)...";
+      });
+    }
+  }
+
   void _analyzePose(Pose pose) {
+    // Extract keypoints (x, y, z) - Using 33 body landmarks for now
+    List<double> keypoints = [];
+    for (final landmark in pose.landmarks.values) {
+      keypoints.add(landmark.x);
+      keypoints.add(landmark.y);
+      keypoints.add(landmark.z);
+    }
+
+    if (keypoints.length == 99) { // 33 landmarks * 3
+      // 1. Coordinate Normalization
+      final normalizedKeypoints = _normalizeKeypoints(keypoints, 33);
+
+      // 2. Sliding Window Buffer
+      _frameBuffer.add(normalizedKeypoints);
+      if (_frameBuffer.length > _windowSize) {
+        _frameBuffer.removeAt(0);
+      }
+
+      // 3. Trigger Backend Streaming
+      if (_frameBuffer.length == _windowSize) {
+        _streamSequenceToBackend();
+      }
+    }
+
+    // Simple heuristic for UI feedback
     final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist];
     final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
-
     if (rightWrist != null && rightShoulder != null) {
       if (rightWrist.y < rightShoulder.y) {
         if (mounted) {
           setState(() {
-            gestureText = "Hello / Wave";
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            gestureText = "No gesture detected";
+            gestureText = "Pose Detected / Active";
           });
         }
       }
     }
+  }
+
+  List<double> _normalizeKeypoints(List<double> keypoints, int count) {
+    // Centroid Subtraction
+    double sumX = 0, sumY = 0, sumZ = 0;
+    for (int i = 0; i < keypoints.length; i += 3) {
+      sumX += keypoints[i];
+      sumY += keypoints[i + 1];
+      sumZ += keypoints[i + 2];
+    }
+    double centerX = sumX / count;
+    double centerY = sumY / count;
+    double centerZ = sumZ / count;
+
+    List<double> centered = [];
+    double maxDist = 0;
+    for (int i = 0; i < keypoints.length; i += 3) {
+      double dx = keypoints[i] - centerX;
+      double dy = keypoints[i + 1] - centerY;
+      double dz = keypoints[i + 2] - centerZ;
+      centered.addAll([dx, dy, dz]);
+      
+      double dist = dx * dx + dy * dy + dz * dz;
+      if (dist > maxDist) maxDist = dist;
+    }
+
+    // Distance Scaling
+    maxDist = maxDist > 0 ? math.sqrt(maxDist) : 1.0;
+    return centered.map((val) => val / maxDist).toList();
+  }
+
+  void _streamSequenceToBackend() {
+    SocketService().streamSequence(_frameBuffer);
   }
 
   InputImage? _inputImageFromCameraImage(CameraImage image) {
@@ -104,9 +231,9 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
     final camera = cameras[0];
     final sensorOrientation = camera.sensorOrientation;
     InputImageRotation? rotation;
-    if (Platform.isIOS) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
-    } else if (Platform.isAndroid) {
+    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       var rotationCompensation =
           _orientations[_controller!.value.deviceOrientation];
       if (rotationCompensation == null) return null;
@@ -144,9 +271,13 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
 
   @override
   void dispose() {
-    _controller?.stopImageStream();
+    if (_isMobile) {
+      _controller?.stopImageStream();
+    }
     _controller?.dispose();
-    _poseDetector.close();
+    _poseDetector?.close();
+    _mockTimer?.cancel();
+    SocketService().dispose();
     super.dispose();
   }
 
