@@ -17,13 +17,13 @@ tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
 buildscript {
-    ext.kotlin_version = '1.8.0' // Ensure Kotlin version is compatible
+    ext.kotlin_version = '2.1.0' // Upgraded for Flutter compatibility
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.1' // Updated AGP version
+        classpath 'com.android.tools.build:gradle:8.6.0' // Upgraded AGP version
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }

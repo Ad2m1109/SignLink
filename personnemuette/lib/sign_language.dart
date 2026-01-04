@@ -148,7 +148,7 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
 
     if (mounted) {
       setState(() {
-        gestureText = "Mock Tracking (Linux)...";
+        gestureText = "Mocking Hand Data (Web/Linux)...";
       });
     }
   }
@@ -306,24 +306,57 @@ class _SignLanguagePageState extends State<SignLanguagePage> {
                 boxShadow: AppTheme.elevatedShadow,
               ),
               clipBehavior: Clip.antiAlias,
-              child: _controller != null && _controller!.value.isInitialized
-                  ? CameraPreview(_controller!)
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            color: AppTheme.primaryColor,
+              child: _isMobile
+                  ? (_controller != null && _controller!.value.isInitialized
+                      ? CameraPreview(_controller!)
+                      : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                color: AppTheme.primaryColor,
+                              ),
+                              const SizedBox(height: AppTheme.spacing16),
+                              Text(
+                                "Initializing camera...",
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: AppTheme.fontSizeBody,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: AppTheme.spacing16),
-                          Text(
-                            "Initializing camera...",
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontSize: AppTheme.fontSizeBody,
+                        ))
+                  : Container(
+                      color: Colors.black87,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.computer,
+                                size: 80, color: Colors.blueAccent),
+                            const SizedBox(height: 20),
+                            Text(
+                              "Mock Mode Active",
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 10),
+                            Text(
+                              "Streaming simulated hand data to backend",
+                              style: GoogleFonts.outfit(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 30),
+                            const CircularProgressIndicator(
+                                color: Colors.blueAccent),
+                          ],
+                        ),
                       ),
                     ),
             ),

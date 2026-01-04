@@ -17,9 +17,9 @@ dependencies:
   flutter_animate: ^4.5.0
 
   # Camera
-  camera: ^0.10.5
+  camera: ^0.11.3
   camera_linux: ^0.0.8
-  google_mlkit_pose_detection: ^0.12.0
+  google_mlkit_pose_detection: ^0.14.0
 
   # Text to Speech
   flutter_tts: ^4.2.2
@@ -35,18 +35,18 @@ dependencies:
   image: ^4.0.17
 
   # File picking
-  file_picker: ^6.1.1
+  file_picker: ^10.3.8
 
   # Audio recording / playback
   flutter_sound: ^9.2.13
 
   # Permissions (camera, mic, storage)
-  permission_handler: ^11.3.1
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
