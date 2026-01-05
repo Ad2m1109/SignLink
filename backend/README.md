@@ -1,51 +1,51 @@
-# HandTalk Backend
+# HandTalk Backend: Bi-LSTM Inference Engine
 
-This is the Flask backend for the HandTalk application. It handles user authentication, conversation management, messaging, and invitations.
+The HandTalk backend is a specialized inference server designed to process high-frequency landmark sequences and return real-time sign language predictions. It leverages a Bi-directional Long Short-Term Memory (Bi-LSTM) architecture to capture temporal dependencies in human gestures.
 
-## Project Structure
+## 🛠️ Core Components
 
-- `app.py`: Application entry point and blueprint registration.
-- `config/`: Configuration files (database, etc.).
-- `controllers/`: Request handlers (routes).
-- `models.py`: Database models (SQLAlchemy).
-- `modules/`: Business logic and helper functions.
-- `migrations/`: Database migration scripts.
+### 1. Bi-LSTM Inference Engine (`modules/sign_language_module.py`)
+- **Model Architecture**: A 2-layer Bi-directional LSTM implemented in TensorFlow/Keras.
+  - Layer 1: 64 units, Bi-LSTM (returns sequences).
+  - Layer 2: 128 units, Bi-LSTM (returns final state).
+  - Dense Layers: Relu activation followed by a Softmax output layer.
+- **Input Specification**: Accepts a 3D tensor of shape `(Batch, 30, 99)`, where 99 represents 33 landmarks with (x, y, z) coordinates.
+- **Singleton Pattern**: The model is loaded as a singleton to ensure memory efficiency and rapid inference response.
 
-## Setup
+### 2. Real-Time Communication (`controllers/socket_controller.py`)
+- **Socket.io Integration**: Handles full-duplex communication with the Flutter client.
+- **Stream Handler**: Listens for `stream_data` events containing normalized landmark sequences.
+- **Prediction Emission**: Emits `prediction_result` events back to the specific client session ID (`request.sid`).
 
-1.  **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+### 3. Database & API (`models.py`, `controllers/`)
+- **SQLAlchemy ORM**: Manages user profiles, friends, and conversation history.
+- **RESTful Endpoints**: Handles non-real-time operations like authentication and invitation management.
 
-2.  **Configuration:**
-    -   Ensure you have a MySQL database running.
-    -   Update `config/database.py` or set environment variables in `.env` for database connection.
+## 📊 Data Pipeline Logic
 
-3.  **Run the Server:**
-    ```bash
-    python3 run.py
-    ```
-    The server will start at `http://127.0.0.1:5000`.
+1. **Reception**: Receives a 30-frame sequence of normalized landmarks.
+2. **Pre-processing**: Validates the sequence length and shape.
+3. **Inference**: Passes the tensor through the Bi-LSTM model.
+4. **Post-processing**: Maps the Softmax output index to a human-readable label using `labels.txt`.
+5. **Feedback**: Returns the predicted label to the frontend in < 50ms.
 
-## API Endpoints
+## 🚀 Development & Setup
 
-### Users (`/users`)
--   `POST /add_user`: Register a new user.
--   `POST /login`: Authenticate a user.
--   `GET /<user_id>`: Get user profile.
--   `POST /get_user_by_email`: Get user details by email.
--   `POST /add_friend`: Add a friend (creates a conversation).
+### Prerequisites
+- Python 3.10+
+- TensorFlow 2.13.0
+- MySQL Server
 
-### Conversations (`/conversations`)
--   `GET /<conversation_id>/messages`: Get messages for a conversation.
--   `POST /get_conversation_id`: Get conversation ID between two users.
+### Installation
+```bash
+pip install -r requirements.txt
+```
 
-### Messages (`/messages`)
--   `POST /add`: Send a message.
+### Running the Server
+**Important**: Always use `run.py` to ensure proper WebSocket initialization:
+```bash
+python3 run.py
+```
 
-### Invitations (`/invitations`)
--   `POST /send`: Send an invitation.
--   `GET /received/<user_id>`: Get received invitations.
--   `GET /sent/<user_id>`: Get sent invitations.
--   `POST /respond`: Respond to an invitation (accept/decline).
+---
+*Technical Note: The model is currently trained on a research dataset. For production deployment, quantization (TFLite/TensorRT) is recommended to further reduce latency.*
