@@ -256,12 +256,6 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ---
 
-## Contact
-
-**Author**: Ad2m1109  
-**Email**: [Your Contact Email]  
-**GitHub**: [https://github.com/Ad2m1109/HandTalk](https://github.com/Ad2m1109/HandTalk)
-
 *Developed as a research prototype for advanced human-computer interaction and accessibility.*
 
 
